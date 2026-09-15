@@ -1,0 +1,294 @@
+menu "Xiaozhi Assistant"
+
+# OTA 地址
+config OTA_URL
+    string "Default OTA URL" 
+    default "http://47.108.216.163:8002/xiaozhi/ota/"
+    # default "https://api.tenclass.net/xiaozhi/ota/"
+    help
+        The application will access this URL to check for new firmwares and server address.
+
+# flash 
+choice
+    prompt "Flash Assets"
+    default FLASH_DEFAULT_ASSETS
+    help
+        Select the assets to flash.
+
+    config FLASH_NONE_ASSETS
+        bool "Do not flash assets"
+    config FLASH_DEFAULT_ASSETS
+        bool "Flash Default Assets"
+    config FLASH_CUSTOM_ASSETS
+        bool "Flash Custom Assets"
+endchoice
+
+# 自定义资产文件
+config CUSTOM_ASSETS_FILE
+    depends on FLASH_CUSTOM_ASSETS
+    string "Custom Assets File"
+    default "assets.bin"
+    help
+        The custom assets file to flash.
+        It can be a local file relative to the project directory or a remote url.
+
+# 默认语言
+choice
+    prompt "Default Language"
+    default LANGUAGE_ZH_CN
+    help
+        Select device display language
+
+    config LANGUAGE_ZH_CN
+        bool "Chinese"
+    config LANGUAGE_ZH_TW
+        bool "Chinese Traditional"
+    config LANGUAGE_EN_US
+        bool "English"
+    config LANGUAGE_JA_JP
+        bool "Japanese"
+    config LANGUAGE_KO_KR
+        bool "Korean"
+    config LANGUAGE_VI_VN
+        bool "Vietnamese"
+    config LANGUAGE_TH_TH
+        bool "Thai"
+    config LANGUAGE_DE_DE
+        bool "German"
+    config LANGUAGE_FR_FR
+        bool "French"
+    config LANGUAGE_ES_ES
+        bool "Spanish"
+    config LANGUAGE_IT_IT
+        bool "Italian"
+    config LANGUAGE_RU_RU
+        bool "Russian"
+    config LANGUAGE_AR_SA
+        bool "Arabic"
+    config LANGUAGE_HI_IN
+        bool "Hindi"
+    config LANGUAGE_PT_PT
+        bool "Portuguese"
+    config LANGUAGE_PL_PL
+        bool "Polish"
+    config LANGUAGE_CS_CZ
+        bool "Czech"
+    config LANGUAGE_FI_FI
+        bool "Finnish"
+    config LANGUAGE_TR_TR
+        bool "Turkish"
+    config LANGUAGE_ID_ID
+        bool "Indonesian"
+    config LANGUAGE_UK_UA
+        bool "Ukrainian"
+    config LANGUAGE_RO_RO
+        bool "Romanian"
+    config LANGUAGE_BG_BG
+        bool "Bulgarian"
+    config LANGUAGE_CA_ES
+        bool "Catalan"
+    config LANGUAGE_DA_DK
+        bool "Danish"
+    config LANGUAGE_EL_GR
+        bool "Greek"
+    config LANGUAGE_FA_IR
+        bool "Persian"
+    config LANGUAGE_FIL_PH
+        bool "Filipino"
+    config LANGUAGE_HE_IL
+        bool "Hebrew"
+    config LANGUAGE_HR_HR
+        bool "Croatian"
+    config LANGUAGE_HU_HU
+        bool "Hungarian"
+    config LANGUAGE_MS_MY
+        bool "Malay"
+    config LANGUAGE_NB_NO
+        bool "Norwegian"
+    config LANGUAGE_NL_NL
+        bool "Dutch"
+    config LANGUAGE_SK_SK
+        bool "Slovak"
+    config LANGUAGE_SL_SI
+        bool "Slovenian"
+    config LANGUAGE_SV_SE
+        bool "Swedish"
+    config LANGUAGE_SR_RS
+        bool "Serbian"
+endchoice
+
+# 目标板
+choice BOARD_TYPE
+    prompt "Target Board"
+    default BOARD_TYPE_WZKJ_ESP32_S3_AI_XIAOWEI_LOW if IDF_TARGET_ESP32S3
+    help
+        Select the physical board hardware implementation.
+        The OTA board type and firmware variant name are configured separately.
+
+    config BOARD_TYPE_WZKJ_ESP32_S3_AI_XIAOWEI_LOW
+        bool "WZKJ ESP32-S3 AI Xiaowei Low (小未低配版)"
+        depends on IDF_TARGET_ESP32S3
+endchoice
+
+
+# 显示样式
+choice DISPLAY_STYLE
+    prompt "Select display style"
+    default USE_DEFAULT_MESSAGE_STYLE
+    help
+        Select display style for Xiaozhi device
+
+    config USE_DEFAULT_MESSAGE_STYLE
+        bool "Enable default message style"
+
+    config USE_WECHAT_MESSAGE_STYLE
+        bool "Enable WeChat Message Style"
+
+endchoice
+
+# 多行聊天消息显示
+config USE_MULTILINE_CHAT_MESSAGE
+    bool "Use multiline chat message display (default mode only)"
+    depends on USE_DEFAULT_MESSAGE_STYLE
+    default n
+    help
+        When enabled, the chat message area in the default display mode shows
+        multiple wrapped lines that grow upward from the bottom of the screen,
+        with auto-adaptive height.
+        When disabled (default), a single-line horizontally scrolling label
+        is shown at the bottom of the screen.
+
+# 唤醒词实现类型
+choice WAKE_WORD_TYPE
+    prompt "Wake Word Implementation Type"
+    default USE_AFE_WAKE_WORD if SPIRAM
+    default WAKE_WORD_DISABLED
+    help
+        Choose the type of wake word implementation to use
+
+    config WAKE_WORD_DISABLED
+        bool "Disabled"
+        help
+            Disable wake word detection
+
+    config USE_AFE_WAKE_WORD
+        bool "Wakenet model with AFE"
+        depends on SPIRAM
+        help
+            Support AEC if available, requires PSRAM
+
+    config USE_CUSTOM_WAKE_WORD
+        bool "Multinet model (Custom Wake Word)"
+        depends on SPIRAM
+        help
+            Requires PSRAM
+
+endchoice
+
+# 自定义唤醒词
+config CUSTOM_WAKE_WORD
+    string "Custom Wake Word"
+    default "xiao tu dou"
+    depends on USE_CUSTOM_WAKE_WORD
+    help
+        Custom Wake Word, use pinyin for Chinese, separated by spaces
+
+# 自定义唤醒词显示
+config CUSTOM_WAKE_WORD_DISPLAY
+    string "Custom Wake Word Display"
+    default "小土豆"
+    depends on USE_CUSTOM_WAKE_WORD
+    help
+        Greeting sent to the server after wake word detection
+
+# 自定义唤醒词阈值
+config CUSTOM_WAKE_WORD_THRESHOLD
+    int "Custom Wake Word Threshold (%)"
+    default 20
+    range 1 99
+    depends on USE_CUSTOM_WAKE_WORD
+    help
+        Custom Wake Word Threshold, range 1-99, the smaller the more sensitive, default 20
+
+# 发送唤醒词数据
+config SEND_WAKE_WORD_DATA
+    bool "Send Wake Word Data"
+    default y
+    depends on USE_AFE_WAKE_WORD || USE_CUSTOM_WAKE_WORD
+    help
+        Send wake word data to the server as the first message of the conversation and wait for response
+
+# 唤醒词检测在监听模式下
+config WAKE_WORD_DETECTION_IN_LISTENING
+    bool "Enable Wake Word Detection in Listening Mode"
+    default n
+    depends on USE_AFE_WAKE_WORD || USE_CUSTOM_WAKE_WORD
+    help
+        Enable wake word detection while in listening mode.
+        When enabled, the device can detect wake word during listening,
+        which allows interrupting the current conversation.
+        When disabled (default), wake word detection is turned off during listening.
+
+# 启用AFE音频处理
+config USE_AUDIO_PROCESSOR
+    bool "Enable AFE Audio Processing"
+    default y
+    depends on SPIRAM
+    help
+        Enable the shared AFE uplink path with AEC and VAD. Noise suppression
+        is not enabled because this project does not provide an NSNet model.
+        Requires ESP32-S3, ESP32-P4, or ESP32-S31 with PSRAM.
+
+# 启用设备侧AEC
+config USE_DEVICE_AEC
+    bool "Enable Device-Side AEC"
+    default n
+    depends on USE_AUDIO_PROCESSOR
+    help
+        To work properly, device-side AEC requires a clean output reference path from the speaker signal and physical acoustic isolation between the microphone and speaker.
+
+# 启用服务器侧AEC
+config USE_SERVER_AEC
+    bool "Enable Server-Side AEC (Unstable)"
+    default n
+    depends on USE_AUDIO_PROCESSOR
+    help
+        To work perperly, server-side AEC requires server support
+
+# 启用音频调试器
+config USE_AUDIO_DEBUGGER
+    bool "Enable Audio Debugger"
+    default n
+    help
+        Enable audio debugger, send audio data through UDP to the host machine
+
+# WiFi配置方法
+menu "WiFi Configuration Method"
+    help
+        WiFi Configuration Method Selection
+    config USE_HOTSPOT_WIFI_PROVISIONING
+        bool "Hotspot"
+        default y
+        help
+            Use WiFi Hotspot to transmit WiFi configuration data
+endmenu
+
+# 音频调试UDP服务器地址
+config AUDIO_DEBUG_UDP_SERVER
+    string "Audio Debug UDP Server Address"
+    default "192.168.2.100:8000"
+    depends on USE_AUDIO_DEBUGGER
+    help
+        UDP server address, format: IP:PORT, used to receive audio debugging data
+
+# 启用自定义消息接收
+config RECEIVE_CUSTOM_MESSAGE
+    bool "Enable Custom Message Reception"
+    default n
+    help
+        Enable custom message reception, allow the device to receive custom messages from the server (preferably through the MQTT protocol)
+
+# 相机配置
+
+
+endmenu

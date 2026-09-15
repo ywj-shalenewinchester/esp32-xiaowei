@@ -1,0 +1,37 @@
+## IDF Component Manager Manifest File
+##
+## Trimmed for the single supported board: wzkj/esp32-s3-ai-xiaowei_low.
+## Every entry below is a *direct* dependency reached by surviving code under main/.
+## Components pulled in transitively (cJSON, esp-dsp, esp_emote_gfx, ...) are resolved
+## automatically and are intentionally not listed.
+
+dependencies:
+  ## --- core runtime -------------------------------------------------------
+  # Network abstraction layer (NetworkInterface / http / mqtt / udp) used by
+  # boards/common/board.h and wifi_board.cc. Not 4G-specific.
+  78/esp-ml307: ~3.6.6
+  78/esp-wifi-connect: ~3.2.2
+
+  # Wake word / AFE front-end + audio pipeline
+  espressif/esp-sr: ~2.4.7
+  espressif/esp_audio_codec: ~2.5.0
+  espressif/esp_audio_effects: ~1.3.0
+  espressif/esp_codec_dev: ~1.5.6
+
+  # Fonts and on-device assets
+  78/xiaozhi-fonts: ~2.0.0
+  espressif/esp_image_effects: ^1.0.1
+  espressif/esp_new_jpeg: ^1.0.2
+
+  ## --- display ------------------------------------------------------------
+  lvgl/lvgl: ~9.5.0
+  esp_lvgl_port: ~2.8.0
+  espressif/esp_lcd_st77916: ^2.0.2
+  espressif2022/esp_emote_expression: ^1.0.2
+
+  ## --- input --------------------------------------------------------------
+  espressif/button: ~4.2.0
+
+  ## Required IDF version
+  idf:
+    version: '>=5.5.2'
