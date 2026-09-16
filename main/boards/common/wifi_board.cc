@@ -339,6 +339,10 @@ std::string WifiBoard::GetDeviceStatusJson() {
         auto battery = cJSON_CreateObject();
         cJSON_AddNumberToObject(battery, "level", level);
         cJSON_AddBoolToObject(battery, "charging", charging);
+        // 显式状态字段: 充电中/放电中/已充满, 供模型直接引用,
+        // 避免模型看到未充电就自行编造"已经充满"
+        cJSON_AddStringToObject(battery, "status",
+                                charging ? "charging" : (level >= 100 ? "full" : "discharging"));
         cJSON_AddItemToObject(root, "battery", battery);
     }
 

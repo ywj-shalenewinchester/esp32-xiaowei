@@ -263,6 +263,8 @@ private:
     i2c_master_bus_handle_t pmic_i2c_bus_;
     // 电源管理芯片指针
     Sy6206                 *pmic_;
+    // PMIC I2C 看门狗喂狗定时器
+    esp_timer_handle_t       pmic_wdt_timer_ = nullptr;
     // 按键对象，包括启动按钮和电源按钮
     Button                  boot_button_;
     Button                  pwr_button_;  // 对应 QON 按键
@@ -314,7 +316,25 @@ private:
         pmic_->SetChargeVoltageMv(4200);  // 4.2V 充满电压
         pmic_->SetChargeCurrentMa(512);   // 512mA 充电电流
         pmic_->SetChargeEnable(true);
+        // NTC 引脚悬空, 不禁用温度检测芯片会拒绝充电 (实测验证)
+        pmic_->DisableNtcCheck();
         pmic_->EnableAdc(true);           // 连续模式 ADC
+
+        // PMIC I2C 看门狗超时会自动停止充电, 周期性喂狗;
+        // 同时轮询中断标志 (REG20/REG22 为读清零, 读取即清中断并恢复 INT 引脚),
+        // 解析触发原因: 插拔电源 / QON 按键 / 看门狗超时 / 过温 / 过压等
+        const esp_timer_create_args_t wdt_args = {
+            .callback = [](void *arg) {
+                Sy6206 *pmic = static_cast<Sy6206 *>(arg);
+                pmic->FeedWatchdog();    // 核心逻辑一: 定期喂狗
+                pmic->HandleInterrupt(); // 核心逻辑二: 读中断原因并解析
+            },
+            .arg = pmic_,
+            .dispatch_method = ESP_TIMER_TASK,
+            .name = "pmic_wdt",
+        };
+        ESP_ERROR_CHECK(esp_timer_create(&wdt_args, &pmic_wdt_timer_));
+        ESP_ERROR_CHECK(esp_timer_start_periodic(pmic_wdt_timer_, 2 * 1000 * 1000)); // 2s
 
         uint8_t chip_id = 0, rev = 0;
         if (pmic_->ReadChipId(&chip_id, &rev) == ESP_OK) {
@@ -473,40 +493,19 @@ public:
             return false;
         }
 
-        // 1. 获取充电状态
-        Sy6206ChargeStatus chg;
-        Sy6206VbusStatus vbus;
-        bool vbus_pg;
-        if (pmic_->GetChargeStatus(&chg, &vbus, &vbus_pg) == ESP_OK) {
-            charging = (chg == SY6206_CHG_TRICKLE_PRE || chg == SY6206_CHG_CC || chg == SY6206_CHG_CV);
+        // 内阻补偿后的开路电压 + 放电曲线查表,
+        // 避免充电时裸 VBAT 读数虚高导致插拔电量跳变
+        Sy6206::BatteryState state;
+        if (pmic_->GetBatteryState(state) == ESP_OK) {
+            level = state.percentage;
+            charging = state.is_charging;
             discharging = !charging;
-        } else {
-            charging = false;
-            discharging = false;
-        }
-
-        // 2. 读取并映射真实电压
-        float vbat_mv = 0;
-        if (pmic_->ReadAdcVbat(vbat_mv) == ESP_OK) {
-            if (vbat_mv >= 4200.0f) {
-                level = 100;
-            } else if (vbat_mv <= 3300.0f) {
-                level = 0;
-            } else {
-                level = (int)((vbat_mv - 3300.0f) / (4200.0f - 3300.0f) * 100);
-            }
-
-            // 充电完成
-            if (chg == SY6206_CHG_DONE) level = 100;
-
-            // 充电中且未完成时最高锁定 99%
-            if (charging && level == 100 && chg != SY6206_CHG_DONE) {
-                level = 99;
-            }
             return true;
         }
 
         level = 0;
+        charging = false;
+        discharging = false;
         return false;
     }
 };

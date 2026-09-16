@@ -16,7 +16,7 @@
 #define SY6206_ADDR                     0x6B
 
 #define PMIC_PG_PIN                     GPIO_NUM_14     // /PG,绿灯 0：电源正常 1：电源异常
-#define PMIC_STAT_PIN                   GPIO_NUM_47     // STAT,蓝灯 0:充电 1:充满
+#define PMIC_STAT_PIN                   GPIO_NUM_47     // STAT,蓝灯 0:充电中 1:空闲或已充满(高电平≠充满, 不能单独作为充满判据!)
 #define PMIC_CE_PIN                     GPIO_NUM_38     // 充电使能：CE, 0：使能 1：禁用
 #define PMIC_INT_PIN                    GPIO_NUM_41     // 中断引脚
 
