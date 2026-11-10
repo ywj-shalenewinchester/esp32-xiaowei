@@ -1,0 +1,5 @@
+﻿# ESP-IDF build output and editor caches
+/build/
+/build_p4/
+/.cache/
+/build*.log
