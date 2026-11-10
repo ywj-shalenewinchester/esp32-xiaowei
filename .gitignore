@@ -3,3 +3,9 @@
 /build_p4/
 /.cache/
 /build*.log
+
+# IDF Component Manager downloads (restored from dependencies.lock)
+/managed_components/
+
+# sdkconfig backup
+sdkconfig.old
