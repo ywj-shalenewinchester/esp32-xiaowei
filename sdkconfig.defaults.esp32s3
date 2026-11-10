@@ -1,0 +1,48 @@
+# ESP32-S3（低配版 esp32-s3-ai-xiaowei_low）专用默认值
+#
+# 低配版的按键菜单（main/boards/wzkj/esp32-s3-ai-xiaowei_low/low_ui.cc）用
+# LVGL 自带的 lv_qrcode 画绑定二维码：
+#   - LV_USE_QRCODE 在 LVGL 的 Kconfig 里没有默认值，不显式打开就编不出来；
+#   - lv_qrcode 内部是 canvas，LV_USE_CANVAS 显式打开，避免以后改 minimal 配置时被关掉。
+# 这两个选项 P4 的 sdkconfig 里本来就是开的，这里只是让 S3 保持一致。
+CONFIG_LV_USE_QRCODE=y
+CONFIG_LV_USE_CANVAS=y
+
+# 菜单里的大号数字（音量/亮度百分比、天气温度）用 Montserrat；
+# 中文标题/按钮文案仍然走主题的 text_font（assets.Apply() 之后是含中文的字体）。
+CONFIG_LV_FONT_MONTSERRAT_30=y
+CONFIG_LV_FONT_MONTSERRAT_46=y
+
+# 系统事件任务（sys_evt）栈：默认 2304 字节，实测扫描完成后回调链
+# （WiFi 事件 → WifiStation::HandleScanResult → StartConnect → 通知回调 →
+#   显示 ShowNotification）会把它压爆，报 "stack overflow in task sys_evt"。
+# 提高到 6144，只多占 3.8KB 内部 RAM。
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=6144
+
+# CPU 240MHz：set-target 生成的默认值是 160MHz，低配版要同时跑 WiFi/语音/
+# LVGL，160MHz 下界面明显掉帧。240MHz 是 S3 的标称频率。
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# 板载 8MB Octal PSRAM（README 硬件规格）。MultiNet 模型 2.6MB、AFE 运行
+# 缓冲都要放 PSRAM，必须打开；IGNORE_NOTFOUND 保证万一板子没贴 PSRAM
+# 也能正常启动（只是唤醒词不可用），不会反复重启。
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y
+
+# 唤醒词：MultiNet 命令词识别（放弃 WakeNet 固定唤醒词）。
+# 服务端不感知具体词表，Index.json 里的 command 是拼音、按音节空格分开。
+CONFIG_USE_CUSTOM_WAKE_WORD=y
+CONFIG_CUSTOM_WAKE_WORD="xiao wei xiao wei"
+CONFIG_CUSTOM_WAKE_WORD_DISPLAY="小未小未"
+CONFIG_CUSTOM_WAKE_WORD_2="ni hao xiao wei"
+CONFIG_CUSTOM_WAKE_WORD_DISPLAY_2="你好小未"
+CONFIG_CUSTOM_WAKE_WORD_THRESHOLD=20
+CONFIG_SR_MN_CN_MULTINET7_QUANT=y
+# CONFIG_SR_MN_CN_NONE is not set
+
+# LVGL 刷新周期：默认 33ms（约 30fps 上限），菜单滑入动画在 160ms 里只剩
+# 2~3 帧，加上 SPI 传输就是"一跳一跳"的。改成 16ms，让刷新调度跟上 60fps。
+# 实际帧率仍受 QSPI 刷屏速度限制，但不会再被这 33ms 量化一步。
+CONFIG_LV_DEF_REFR_PERIOD=16

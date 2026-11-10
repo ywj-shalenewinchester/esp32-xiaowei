@@ -1,0 +1,32 @@
+# ESP-IDF Partition Table
+#
+# ⚠ 临时表（P4 专用），只为把"接入 LCD UI"的第一版固件先烧进实机做验证。
+#   等 UI 大图外置到 assets 分区之后，改用 16m_new.csv（ota 2×5 MB + assets 5.875 MB），
+#   本文件即可删除。不要拿它当最终布局。
+#
+# 为什么需要它：
+#   接入 UI 后固件体积 0x6BDC00 = 6.74 MB，而 16m.csv 的 ota 槽位只有 0x3F0000(3.94 MB)，
+#   直接报 "All app partitions are too small for binary xiaozhi.bin"。
+#   要把 2.24 MB 的壁纸/姿态大图外置才能回到 5 MB 槽位，但那一步涉及资源分区改造与
+#   运行时绑定，应当与"UI 本身能不能跑"分开验证 —— 先用这张表把 UI 送上实机。
+#
+# 体积账（16 MB = 0x1000000）：
+#   ota_0  0x20000  + 0x700000 = 0x720000
+#   ota_1  0x720000 + 0x700000 = 0xE20000
+#   assets 0xE20000 + 0x1E0000 = 0x1000000  ✓
+#   固件 0x6BDC00 放进 0x700000(7 MB) 槽位，余量约 265 KB（很紧，只够验证，不够加功能）。
+#
+# 头部（nvs/otadata/phy_init）刻意与 16m.csv 逐字节一致：
+#   这样 ota_0 的起始偏移仍是 0x20000，NVS 分区的起始与大小都没变，
+#   已烧录的 NVS 内容（含 BOARD_TYPE 之外的设备配置）不会因为换表而失效。
+#
+# Name,   Type, SubType, Offset,  Size, Flags
+nvs,      data, nvs,     0x9000,    0x4000,
+otadata,  data, ota,     0xd000,    0x2000,
+phy_init, data, phy,     0xf000,    0x1000,
+ota_0,    app,  ota_0,   0x20000,   0x700000,
+ota_1,    app,  ota_1,   0x720000,  0x700000,
+# assets 的 subtype 写成 spiffs 只是为了跟 16m.csv 保持一致。运行期根本不挂文件系统：
+# main/assets.cc 的 LvglStrategy 是直接 esp_partition_mmap 这块分区再解析自带的 mmap 表，
+# 所以 subtype 对读取没有任何影响（它用的是 ESP_PARTITION_SUBTYPE_ANY 查找）。
+assets,   data, spiffs,  0xE20000,  0x1E0000

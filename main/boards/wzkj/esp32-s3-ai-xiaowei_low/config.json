@@ -1,0 +1,11 @@
+{
+    "manufacturer": "wzkj",
+    "type": "esp32-s3-ai-xiaowei-low",
+    "target": "esp32s3",
+    "builds": [
+        {
+            "name": "esp32-s3-ai-xiaowei-low",
+            "sdkconfig_append": []
+        }
+    ]
+}

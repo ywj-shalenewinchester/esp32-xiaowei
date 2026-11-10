@@ -1,0 +1,21 @@
+{
+  "python.analysis.stubPath": "C:\\Users\\20677\\.kendryte\\k230_canmv_pylance\\66a24edfe0012b4e\\typings",
+  "idf.currentSetup": "D:\\Espressif\\frameworks\\esp-idf-v5.5.4",
+  "idf.flashType": "UART",
+  "idf.flashBaudRate": "115200",
+  "idf.monitorBaudRate": "115200",
+  "idf.openOcdConfigs": [
+    "board/esp32s3-builtin.cfg"
+  ],
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32p4"
+  },
+  "clangd.path": "D:\\Espressif\\tools\\esp-clang\\esp-19.1.2_20250312\\esp-clang\\bin\\clangd.exe",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=e:\\my_xiaozhi\\esp32-xiaowei\\ui\\esp32-xiaowei-main\\build"
+  ],
+  "C_Cpp.errorSquiggles": "disabled",
+  "idf.port": "COM14"
+}

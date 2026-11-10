@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ESP32-P4 烧录（COM15，无 Stub）",
+      "type": "process",
+      "command": "D:\\Espressif\\python_env\\idf5.5_py3.11_env\\Scripts\\python.exe",
+      "args": [
+        "D:\\Espressif\\frameworks\\esp-idf-v5.5.4\\components\\esptool_py\\esptool\\esptool.py",
+        "--chip", "esp32p4",
+        "-p", "COM15",
+        "-b", "115200",
+        "--no-stub",
+        "write_flash",
+        "--flash_mode", "dio",
+        "--flash_freq", "80m",
+        "--flash_size", "16MB",
+        "0x2000", "${workspaceFolder}/build/bootloader/bootloader.bin",
+        "0x8000", "${workspaceFolder}/build/partition_table/partition-table.bin",
+        "0xd000", "${workspaceFolder}/build/ota_data_initial.bin",
+        "0x20000", "${workspaceFolder}/build/xiaozhi.bin",
+        "0x800000", "${workspaceFolder}/build/generated_assets.bin"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

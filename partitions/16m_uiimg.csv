@@ -1,0 +1,49 @@
+# ESP-IDF Partition Table
+#
+# P4 专用布局（S3 仍用 16m.csv，见 sdkconfig.defaults.esp32p4 的说明）。
+# 取代临时的 16m_ota7.csv —— 那张表把 app 槽撑到 7 MB 只是为了先把 UI 送进实机，
+# 代价是 assets 只剩 1.875 MB，robot 页要用的 emote 表情包（1.729 MB）根本放不下。
+#
+# 这次的做法是把 8 张全屏大图的像素数据从 app 里搬出来（共 2,297,283 B）：
+#   3 张 466x466 壁纸 (RGB565, 434,312 B x3) + 5 张姿态仪图 = 2.24 MB
+# 搬出来之后 app 回落到 ~4.77 MB，5 MB 槽就够了，于是能腾出两个新分区。
+#
+# 为什么 UI 大图单开 uiimg 分区，而不是塞进 assets：
+#   1) 运行期 main/assets.cc 的 Download()/Apply() 在 OTA 下发新资源包时会把
+#      assets 分区**整块重写**，塞进去的图会被无声抹掉；
+#   2) assets 分区的字节布局保持原样，xiaozhi 的字体/表情/唤醒词路径零回归风险；
+#   3) 尺寸上不吃亏：uiimg 单开之后 app 槽仍然是 5 MB。
+#
+# 体积账（16 MB = 0x1000000）：
+#   ota_0  0x20000  + 0x500000 = 0x520000      app  ~4.77 MB → 余量约 460 KB
+#   ota_1  0x520000 + 0x500000 = 0xA20000      （双 OTA 保留，可回滚）
+#   assets 0xA20000 + 0x1E0000 = 0xC00000      xiaozhi 资源 ~1.66 MB（本表未改其大小）
+#   uiimg  0xC00000 + 0x240000 = 0xE40000      8 张大图 ~2.30 MB
+#   emote  0xE40000 + 0x1C0000 = 0x1000000     emote 表情包 1,729,100 B
+#                                              ✓ 正好铺满，无空洞
+#
+# 头部（nvs/otadata/phy_init）刻意与 16m.csv、16m_ota7.csv 逐字节一致：
+#   ota_0 起始偏移仍是 0x20000，NVS 分区的起始与大小都没变，
+#   已烧录的 NVS 内容不会因为换表而失效。
+#
+# 新分区的 subtype 写 spiffs 只是为了跟 assets/16m.csv 保持一致。运行期都不挂文件
+# 系统：三块分区全是原始 mmap 容器
+#   assets → main/assets.cc 的 LvglStrategy
+#   uiimg  → main/display/src/ui/platform/xiaowei_ui_images.c
+#   emote  → components/esp_emote_gen_player
+# 查找用的都是 ESP_PARTITION_SUBTYPE_ANY，subtype 对读取没有任何影响。
+#
+# 烧录内容（idf.py flash 会自动带上，见 main/CMakeLists.txt）：
+#   assets ← build/generated_assets.bin      （xiaozhi 的字体/表情/唤醒词）
+#   uiimg  ← build/uiimg.bin                 （scripts/build_ui_images_bin.py 生成）
+#   emote  ← main/display/Expression/emote-assets.bin
+#
+# Name,   Type, SubType, Offset,   Size, Flags
+nvs,      data, nvs,     0x9000,    0x4000,
+otadata,  data, ota,     0xd000,    0x2000,
+phy_init, data, phy,     0xf000,    0x1000,
+ota_0,    app,  ota_0,   0x20000,   0x500000,
+ota_1,    app,  ota_1,   0x520000,  0x500000,
+assets,   data, spiffs,  0xA20000,  0x1E0000,
+uiimg,    data, spiffs,  0xC00000,  0x240000,
+emote,    data, spiffs,  0xE40000,  0x1C0000
